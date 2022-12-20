@@ -21,9 +21,12 @@ const DEFAULT_BUFFER_SIZE = 500;
 // Adjust logging lovel for OTel logging. DiagLogLevel.DEBUG, etc.
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO);
 
+// Azure Functions debugging tooling does not populate this ENV var.
+const functionAppName = process.env.SERVICE_NAME || process.env.WEBSITE_SITE_NAME || 'timer-trigger-app';
+
 const provider = new NodeTracerProvider({
   resource: new Resource({
-    [SemanticResourceAttributes.SERVICE_NAME]: process.env.SERVICE_NAME || process.env.WEBSITE_SITE_NAME,
+    [SemanticResourceAttributes.SERVICE_NAME]: functionAppName,
     [SemanticResourceAttributes.SERVICE_INSTANCE_ID]: process.env.WEBSITE_INSTANCE_ID || uuid.v4(),
     [SemanticResourceAttributes.HOST_NAME]: process.env.WEBSITE_HOSTNAME.split(':')[0],
     [SemanticResourceAttributes.CLOUD_PROVIDER]: CloudProviderValues.AZURE
@@ -79,7 +82,7 @@ function instrumentTimerFunction(originalFunction) {
     const { executionContext, bindingData } = context;
 
     // Name should be Azure Function Application name and Function name.
-    const appAndFunctionName = `${process.env.WEBSITE_SITE_NAME}/${executionContext.functionName}`;
+    const appAndFunctionName = `${functionAppName}/${executionContext.functionName}`;
 
     const span = tracer.startSpan(
       executionContext.functionName,
